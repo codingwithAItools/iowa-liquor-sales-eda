@@ -96,29 +96,50 @@ md("""
 
 ### Load the data
 
-The official file is large. To keep the notebook practical in free Google Colab, it reads the CSV in chunks and takes a reproducible sample from every chunk. This limits memory use while retaining observations from across the file.
+Download the CSV files from the official dataset page and upload all of them to the Colab session. The loader searches both `/content` (Colab uploads) and the repository's `data` folder, then reads every CSV in chunks.
 
-Set `SAMPLE_PER_CHUNK = None` to retain the entire dataset.
+This local-file approach avoids the HTTP 403 error returned by the Iowa download server when pandas requests the CSV directly. To keep the notebook practical in free Google Colab, it takes a reproducible sample from every chunk. Set `SAMPLE_PER_CHUNK = None` to retain every row.
 """)
 
 code("""
-DATA_URL = "https://idh-be.iowa.gov/api/v1/datasets/1261/rows.csv"
-LOCAL_DATA = Path("data/rows.csv")
 CHUNK_SIZE = 100_000
 SAMPLE_PER_CHUNK = 12_500
 RANDOM_STATE = 42
 
-source = LOCAL_DATA if LOCAL_DATA.exists() else DATA_URL
+search_folders = [Path("/content"), Path("data")]
+csv_files = sorted({
+    file.resolve()
+    for folder in search_folders
+    if folder.exists()
+    for file in folder.glob("*.csv")
+})
+
+if not csv_files:
+    raise FileNotFoundError(
+        "No CSV files were found. Upload all five CSV files to Colab, "
+        "or place them inside the project's data folder."
+    )
+
+print(f"CSV files found: {len(csv_files)}")
+for file in csv_files:
+    print(f"- {file.name}")
 
 chunks = []
-for chunk_number, chunk in enumerate(
-    pd.read_csv(source, chunksize=CHUNK_SIZE, low_memory=False)
-):
-    if SAMPLE_PER_CHUNK is not None and len(chunk) > SAMPLE_PER_CHUNK:
-        chunk = chunk.sample(SAMPLE_PER_CHUNK, random_state=RANDOM_STATE + chunk_number)
-    chunks.append(chunk)
+chunk_number = 0
+
+for file in csv_files:
+    for chunk in pd.read_csv(file, chunksize=CHUNK_SIZE, low_memory=False):
+        if SAMPLE_PER_CHUNK is not None and len(chunk) > SAMPLE_PER_CHUNK:
+            chunk = chunk.sample(
+                n=SAMPLE_PER_CHUNK,
+                random_state=RANDOM_STATE + chunk_number,
+            )
+        chunk["source_file"] = file.name
+        chunks.append(chunk)
+        chunk_number += 1
 
 raw = pd.concat(chunks, ignore_index=True)
+print(f"Files combined: {len(csv_files)}")
 print(f"Rows loaded: {len(raw):,}")
 print(f"Columns loaded: {raw.shape[1]}")
 raw.head()
