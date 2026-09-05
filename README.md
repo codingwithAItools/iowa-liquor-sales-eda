@@ -34,7 +34,9 @@ iowa-liquor-sales-eda/
 
 ## Run in Google Colab
 
-Open `iowa_liquor_sales_eda.ipynb` in Colab and select **Runtime > Run all**. The notebook reads the official 2024 CSV in chunks and keeps a reproducible sample so it remains practical on the free Colab runtime.
+Open `iowa_liquor_sales_eda.ipynb` in Colab, upload all five downloaded CSV files, and select **Runtime > Run all**. The notebook discovers every uploaded CSV, reads them in chunks, and keeps a reproducible sample so it remains practical on the free Colab runtime.
+
+The official server may return `HTTP Error 403: Forbidden` when pandas tries to read its download URL directly. The notebook therefore reads the downloaded files locally instead of requesting the blocked endpoint.
 
 To analyse the complete file, change `SAMPLE_PER_CHUNK` to `None`. This needs substantially more memory.
 
@@ -68,4 +70,3 @@ Python, pandas, NumPy, Matplotlib, Seaborn and Jupyter/Google Colab.
 ## Important limitation
 
 The records represent wholesale spirits purchases by licensed retailers, rather than purchases made by individual consumers. Results should therefore be interpreted as retailer purchasing patterns, not direct consumer behaviour.
-
